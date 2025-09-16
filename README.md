@@ -8,10 +8,10 @@ Try this to clean-up space on your hard drive (choose NVme for faster
 speed).
 
 ```sh
-# cd / && find -d -print0 | runj 8 xargs -0 rm -f
+# cd / && find -d | runj 8 xargs rm -i
 ```
 
-This will run 8 parallel `xargs -0 rm -f` processes.
+This will run 8 parallel `xargs rm -i` processes.
 
 Try this to speed up any shell script (warning, do not try this at home
 or on Linux) !
