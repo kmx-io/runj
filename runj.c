@@ -114,7 +114,7 @@ static int runj (int count, char **argv)
 			close(pipe_fd_i[1]);
 			close(pipe_fd_i[2]);
 			dup2(pipe_fd_i[3], 1);
-			if (1)
+			if (0)
 				fprintf(stderr, "runj: child: %s\n",
 					argv[0]);
 			execvp(argv[0], argv);
@@ -126,7 +126,7 @@ static int runj (int count, char **argv)
 		pipe_fd_i += 4;
 		i++;
 	}
-	while (exited < count && eof < count) {
+	while (exited < count && eof < count * 2) {
 		FD_ZERO(&fds_read);
 		FD_ZERO(&fds_write);
 		fd_max = 0;
@@ -157,9 +157,10 @@ static int runj (int count, char **argv)
 				    FD_ISSET(pipe_fd_i[2], &fds_read))
 					if (runj_rx(pipe_fd_i[2],
 						    stdout) <= 0) {
-						fprintf(stderr,
-							"runj: close %d\n",
-							pipe_fd_i[2]);
+						if (0)
+							fprintf(stderr,
+								"runj: close r %d\n",
+								pipe_fd_i[2]);
 						close(pipe_fd_i[2]);
 						pipe_fd_i[2] = -1;
 						eof++;
@@ -168,9 +169,10 @@ static int runj (int count, char **argv)
 				    FD_ISSET(pipe_fd_i[1], &fds_write))
 					if (runj_tx(stdin,
 						    pipe_fd_i[1]) <= 0) {
-						fprintf(stderr,
-							"runj: close %d\n",
-							pipe_fd_i[1]);
+						if (0)
+							fprintf(stderr,
+								"runj: close w %d\n",
+								pipe_fd_i[1]);
 						close(pipe_fd_i[1]);
 						pipe_fd_i[1] = -1;
 						eof++;
@@ -188,10 +190,15 @@ static int runj (int count, char **argv)
 				i = count;
 				goto stop;
 			}
-			fprintf(stderr, "runj: %d: ok\n", pipe_fd[i * 4 + 1]);
+			if (0)
+				fprintf(stderr, "runj: %d: ok\n",
+					pipe_fd[i * 4 + 1]);
 			exited++;
 		}
 		else if (wpid > 0 && WIFSIGNALED(status)) {
+			if (0)
+				fprintf(stderr, "runj: signal %d\n",
+					WTERMSIG(status));
 			if ((i = find_pid(wpid, pid, sizeof(pid))) < 0)
 				errx(1, "runj: find_pid");
 			pid[i] = 0;
@@ -229,11 +236,13 @@ static int runj_rx (int fd_read, FILE *fp_write)
 	ssize_t r;
 	ssize_t remaining;
 	assert(fp_write);
-	fprintf(stderr, "runj_rx\n");
+	if (0)
+		fprintf(stderr, "runj_rx\n");
 	if ((r = read(fd_read, buf, sizeof(buf) - 1)) <= 0)
 		return r;
 	buf[r] = 0;
-	fprintf(stderr, "runj_rx: %ld: %s\n", r, buf);
+	if (0)
+		fprintf(stderr, "runj_rx: %ld: %s\n", r, buf);
 	done = 0;
 	remaining = r;
 	while (remaining > 0) {
@@ -258,7 +267,7 @@ static int runj_tx (FILE *fp_read, int fd_write)
 			return 0;
 		errx(1, "runj_tx: fgets");
 	}
-	if (1)
+	if (0)
 		fprintf(stderr, "runj_tx: %d: %s\n", fd_write, buf);
 	done = 0;
 	remaining = strlen(buf);
