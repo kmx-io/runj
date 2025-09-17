@@ -2,7 +2,7 @@
 
 Run a command with multiple processes.
 
-## Example
+## Examples
 
 Try this to clean-up space on your hard drive (choose NVme for faster
 speed).
@@ -31,3 +31,21 @@ runj < tests -1 ./test-runner
 ```
 
 Simple as that and MP-safe.
+
+
+## Documentation
+
+runj is a UNIX command to run a command in an arbitrary number N of
+subprocesses with line-buffered input and output.
+
+It starts by forking N subprocesses and creating 2 × N pipes. The
+subprocesses are started using execvp on the remaining arguments
+and the pipes are dup2'ed to standard input and standard output.
+
+The process then enters a loop that will exit when all subprocesses have
+died and all pipes are closed. In the loop there is a non-blocking
+reaper waiting for any subprocess to collect error status. In case of
+error other subprocesses are killed with SIGINT and pipes are closed.
+After the reaper is done, pipes are forwarded to and from standard
+output and standard input using select(2), fgets(3), write(2), read(2)
+and fwrite(3).
