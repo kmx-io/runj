@@ -183,8 +183,11 @@ static int runj (int count, char **argv)
 		}
 		if ((wpid = waitpid(-1, &status, WNOHANG)) > 0 &&
 		    WIFEXITED(status)) {
-			if ((i = find_pid(wpid, pid, sizeof(pid))) < 0)
-				errx(1, "runj: find_pid");
+			if ((i = find_pid(wpid, pid, sizeof(pid))) < 0) {
+				if (0)
+					warnx("runj: find_pid exit");
+				continue;
+			}
 			pid[i] = 0;
 			if ((r = WEXITSTATUS(status))) {
 				i = count;
@@ -196,11 +199,11 @@ static int runj (int count, char **argv)
 			exited++;
 		}
 		else if (wpid > 0 && WIFSIGNALED(status)) {
-			if (0)
-				fprintf(stderr, "runj: signal %d\n",
-					WTERMSIG(status));
 			if ((i = find_pid(wpid, pid, sizeof(pid))) < 0)
-				errx(1, "runj: find_pid");
+				errx(1, "runj: find_pid signal");
+			if (0)
+				fprintf(stderr, "runj: %d: signal %d\n",
+					pid[i], WTERMSIG(status));
 			pid[i] = 0;
 			i = count;
 			r = 1;
