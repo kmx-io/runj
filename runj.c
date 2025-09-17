@@ -17,13 +17,13 @@ static int find_pid (pid_t key, pid_t *pids, size_t pids_size);
 int        main (int argc, char **argv);
 static int ncpu (void);
 static int runj (int count, char **argv);
-static int runj_child (int index, char **argv);
+static int runj_rx (int fd_read, FILE *fp_write);
+static int runj_tx (FILE *fp_read, int fd_write);
 static int usage (char *argv0);
-static int xfer (FILE *fp_read, int fd_write);
 
 static int find_pid (pid_t key, pid_t *pids, size_t pids_size)
 {
-	size_t count = pids_size / sizeof(pid_t);
+	int count = pids_size / sizeof(pid_t);
 	int i = 0;
 	while (i < count) {
 		if (pids[i] == key)
@@ -70,6 +70,7 @@ static int ncpu (void)
 static int runj (int count, char **argv)
 {
 	int exited = 0;
+	fd_set fds_read;
 	fd_set fds_write;
 	int fd_max = 0;
 	int i;
@@ -84,15 +85,19 @@ static int runj (int count, char **argv)
 		return 1;
 	if (! (pid = calloc(count, sizeof(pid_t))))
 		return 1;
-	if (! (pipe_fd = calloc(count, sizeof(int) * 2)))
+	if (! (pipe_fd = calloc(count, sizeof(int) * 4)))
 		return 1;
-	//FD_ZERO(&fds_read);
-	FD_ZERO(&fds_write);
 	pipe_fd_i = pipe_fd;
 	i = 0;
 	while (i < count) {
 		if (pipe(pipe_fd_i)) {
-			warn("pipe");
+			warn("pipe 1");
+			i++;
+			r = 1;
+			goto stop;
+		}
+		if (pipe(pipe_fd_i + 2)) {
+			warn("pipe 2");
 			i++;
 			r = 1;
 			goto stop;
@@ -106,8 +111,9 @@ static int runj (int count, char **argv)
 		if (! pid[i]) {
 			dup2(pipe_fd_i[0], 0);
 			close(pipe_fd_i[1]);
-			//dup2(pipe_fd_i[1], 1);
-			if (0)
+			close(pipe_fd_i[2]);
+			dup2(pipe_fd_i[3], 1);
+			if (1)
 				fprintf(stderr, "runj: child: %s\n",
 					argv[0]);
 			execvp(argv[0], argv);
@@ -115,51 +121,52 @@ static int runj (int count, char **argv)
 			_exit(1);
 		}
 		close(pipe_fd_i[0]);
-		FD_SET(pipe_fd_i[1], &fds_write);
-		if (pipe_fd_i[1] + 1 > fd_max)
-			fd_max = pipe_fd_i[1] + 1;
-		pipe_fd_i += 2;
+		close(pipe_fd_i[3]);
+		pipe_fd_i += 4;
 		i++;
 	}
 	while (exited < count) {
-		if (feof(stdin)) {
-			i = count;
-			r = 0;
-			goto stop;
+		FD_ZERO(&fds_read);
+		FD_ZERO(&fds_write);
+		pipe_fd_i = pipe_fd;
+		i = 0;
+		while (i < count) {
+			FD_SET(pipe_fd_i[1], &fds_write);
+			if (pipe_fd_i[1] + 1 > fd_max)
+				fd_max = pipe_fd_i[1] + 1;
+			FD_SET(pipe_fd_i[2], &fds_read);
+			if (pipe_fd_i[2] + 1 > fd_max)
+				fd_max = pipe_fd_i[2] + 1;
+			pipe_fd_i += 4;
+			i++;
 		}
-		if (select(fd_max, NULL, &fds_write, NULL, &timeout) > 0) {
+		if (select(fd_max, &fds_read, &fds_write, NULL,
+			   &timeout) > 0) {
 			if (0)
 				fprintf(stderr, "select\n");
 			pipe_fd_i = pipe_fd;
 			i = 0;
 			while (i < count) {
-				if (feof(stdin)) {
-					i = count;
-					r = 0;
-					goto stop;
-				}
-				if (FD_ISSET(pipe_fd_i[1], &fds_write)) {
-					if (xfer(stdin, pipe_fd_i[1]) < 0) {
-						errx(1, "runj: xfer");
-						i = count;
-						r = 1;
-						goto stop;
-					}
-				}
-				pipe_fd_i += 2;
+				if (FD_ISSET(pipe_fd_i[2], &fds_read))
+					if (runj_rx(pipe_fd_i[2], stdout) <= 0)
+						close(pipe_fd_i[2]);
+				if (FD_ISSET(pipe_fd_i[1], &fds_write))
+					if (runj_tx(stdin, pipe_fd_i[1]) <= 0)
+						close(pipe_fd_i[1]);
+				pipe_fd_i += 4;
 				i++;
 			}
 		}
 		if ((wpid = waitpid(-1, &status, WNOHANG)) > 0 &&
 		    WIFEXITED(status)) {
+			if ((i = find_pid(wpid, pid, sizeof(pid))) < 0)
+				errx(1, "runj: find_pid");
+			pid[i] = 0;
 			if ((r = WEXITSTATUS(status))) {
-				if ((i = find_pid(wpid, pid,
-						  sizeof(pid))) < 0)
-					errx(1, "runj: find_pid");
-				pid[i] = 0;
 				i = count;
 				goto stop;
 			}
+			fprintf(stderr, "runj: ok\n");
 			exited++;
 		}
 		else if (wpid > 0 && WIFSIGNALED(status)) {
@@ -170,6 +177,14 @@ static int runj (int count, char **argv)
 			r = 1;
 			goto stop;
 		}
+	}
+	pipe_fd_i = pipe_fd;
+	i = 0;
+	while (i < count) {
+		close(pipe_fd_i[1]);
+		close(pipe_fd_i[2]);
+		pipe_fd_i += 4;
+		i++;
 	}
 	return 0;
  stop:
@@ -184,16 +199,31 @@ static int runj (int count, char **argv)
 	return r;
 }
 
-static int usage (char *argv0)
+static int runj_rx (int fd_read, FILE *fp_write)
 {
-	fprintf(stderr, "Usage: %s JOB_COUNT COMMAND ...\n", argv0);
-	fprintf(stderr, "       %s -1 COMMAND ...\n", argv0);
-	return 1;
+	char buf[1024 * 1024];
+	ssize_t done;
+	ssize_t r;
+	ssize_t remaining;
+	assert(fp_write);
+	fprintf(stderr, "runj_rx\n");
+	if ((r = read(fd_read, buf, sizeof(buf))) <= 0)
+		return r;
+	fprintf(stderr, "runj_rx: %ld\n", r);
+	done = 0;
+	remaining = r;
+	while (remaining > 0) {
+		if ((r = fwrite(buf + done, 1, remaining, fp_write)) <= 0)
+			err(1, "runj_rx: write");
+		done += r;
+		remaining -= r;
+	}
+	fflush(fp_write);
+	return 0;
 }
 
-static int xfer (FILE *fp_read, int fd_write)
+static int runj_tx (FILE *fp_read, int fd_write)
 {
-	int avail;
 	char buf[1024 * 1024];
 	ssize_t done;
 	ssize_t r;
@@ -202,17 +232,24 @@ static int xfer (FILE *fp_read, int fd_write)
 	if (! fgets(buf, sizeof(buf), fp_read)) {
 		if (feof(fp_read))
 			return 0;
-		errx(1, "xfer: fgets");
+		errx(1, "runj_tx: fgets");
 	}
-	if (0)
-		fprintf(stderr, "xfer: %s\n", buf);
+	if (1)
+		fprintf(stderr, "runj_tx: %s\n", buf);
 	done = 0;
 	remaining = strlen(buf);
 	while (remaining > 0) {
 		if ((r = write(fd_write, buf + done, remaining)) <= 0)
-			err(1, "xfer: write");
+			err(1, "runj_tx: write");
 		done += r;
 		remaining -= r;
 	}
 	return 0;
+}
+
+static int usage (char *argv0)
+{
+	fprintf(stderr, "Usage: %s JOB_COUNT COMMAND ...\n", argv0);
+	fprintf(stderr, "       %s -1 COMMAND ...\n", argv0);
+	return 1;
 }

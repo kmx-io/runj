@@ -10,9 +10,9 @@ OBJS = runj.o
 
 OBJS_DEBUG = runj.debug.o
 
-CFLAGS = -O2
+CFLAGS = -W -Wall -Werror -std=c89 -pedantic -O2 -pipe
 
-CFLAGS_DEBUG = -g -O0
+CFLAGS_DEBUG = -W -Wall -Werror -std=c89 -pedantic -g -O0
 
 all: build
 
