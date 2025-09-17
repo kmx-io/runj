@@ -2,3 +2,4 @@
 *.o
 runj
 runj_debug
+runj-*

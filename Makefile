@@ -4,6 +4,9 @@
 PROG = runj
 PROG_DEBUG = runj_debug
 
+VERSION = 0.1
+DIST = ${PROG}-${VERSION}
+
 SRCS = runj.c
 
 OBJS = runj.o
@@ -14,9 +17,15 @@ CFLAGS = -W -Wall -Werror -std=c89 -pedantic -O2 -pipe
 
 CFLAGS_DEBUG = -W -Wall -Werror -std=c89 -pedantic -g -O0
 
+CLEANFILES = *.o ${PROG} ${PROG_DEBUG} ${DIST}.tar.gz
+
 all: build debug
 
 build: ${PROG}
+
+clean:
+	rm -f ${CLEANFILES}
+	rm -rf ${DIST}
 
 .c.o:
 	${CC} ${CFLAGS} -c $< -o $@
@@ -28,6 +37,15 @@ build: ${PROG}
 
 debug: ${PROG_DEBUG}
 
+dist: ${DIST}.tar.gz
+
+${DIST}.tar.gz:
+	rm -rf ${DIST}.old
+	! test -d ${DIST} || mv ${DIST} ${DIST}.old
+	mkdir ${DIST}
+	cpio -pdl ${DIST} < ${PROG}.index
+	tar czf ${DIST}.tar.gz ${DIST}
+
 gdb: debug
 	gdb ${PROG_DEBUG}
 
@@ -36,3 +54,5 @@ ${PROG}: ${OBJS}
 
 ${PROG_DEBUG}: ${OBJS_DEBUG}
 	${CC} ${CFLAGS} ${OBJS_DEBUG} ${LDFLAGS} -o ${PROG_DEBUG}
+
+.PHONY: all build clean debug dist ${DIST}.tar.gz gdb
