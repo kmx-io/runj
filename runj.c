@@ -69,6 +69,7 @@ static int ncpu (void)
 
 static int runj (int count, char **argv)
 {
+	int eof = 0;
 	int exited = 0;
 	fd_set fds_read;
 	fd_set fds_write;
@@ -125,18 +126,23 @@ static int runj (int count, char **argv)
 		pipe_fd_i += 4;
 		i++;
 	}
-	while (exited < count) {
+	while (exited < count && eof < count) {
 		FD_ZERO(&fds_read);
 		FD_ZERO(&fds_write);
+		fd_max = 0;
 		pipe_fd_i = pipe_fd;
 		i = 0;
 		while (i < count) {
-			FD_SET(pipe_fd_i[1], &fds_write);
-			if (pipe_fd_i[1] + 1 > fd_max)
-				fd_max = pipe_fd_i[1] + 1;
-			FD_SET(pipe_fd_i[2], &fds_read);
-			if (pipe_fd_i[2] + 1 > fd_max)
-				fd_max = pipe_fd_i[2] + 1;
+			if (pipe_fd_i[1] >= 0) {
+				FD_SET(pipe_fd_i[1], &fds_write);
+				if (pipe_fd_i[1] + 1 > fd_max)
+					fd_max = pipe_fd_i[1] + 1;
+			}
+			if (pipe_fd_i[2] >= 0) {
+				FD_SET(pipe_fd_i[2], &fds_read);
+				if (pipe_fd_i[2] + 1 > fd_max)
+					fd_max = pipe_fd_i[2] + 1;
+			}
 			pipe_fd_i += 4;
 			i++;
 		}
@@ -147,12 +153,28 @@ static int runj (int count, char **argv)
 			pipe_fd_i = pipe_fd;
 			i = 0;
 			while (i < count) {
-				if (FD_ISSET(pipe_fd_i[2], &fds_read))
-					if (runj_rx(pipe_fd_i[2], stdout) <= 0)
+				if (pipe_fd_i[2] >= 0 &&
+				    FD_ISSET(pipe_fd_i[2], &fds_read))
+					if (runj_rx(pipe_fd_i[2],
+						    stdout) <= 0) {
+						fprintf(stderr,
+							"runj: close %d\n",
+							pipe_fd_i[2]);
 						close(pipe_fd_i[2]);
-				if (FD_ISSET(pipe_fd_i[1], &fds_write))
-					if (runj_tx(stdin, pipe_fd_i[1]) <= 0)
+						pipe_fd_i[2] = -1;
+						eof++;
+					}
+				if (pipe_fd_i[1] >= 0 &&
+				    FD_ISSET(pipe_fd_i[1], &fds_write))
+					if (runj_tx(stdin,
+						    pipe_fd_i[1]) <= 0) {
+						fprintf(stderr,
+							"runj: close %d\n",
+							pipe_fd_i[1]);
 						close(pipe_fd_i[1]);
+						pipe_fd_i[1] = -1;
+						eof++;
+					}
 				pipe_fd_i += 4;
 				i++;
 			}
@@ -166,7 +188,7 @@ static int runj (int count, char **argv)
 				i = count;
 				goto stop;
 			}
-			fprintf(stderr, "runj: ok\n");
+			fprintf(stderr, "runj: %d: ok\n", pipe_fd[i * 4 + 1]);
 			exited++;
 		}
 		else if (wpid > 0 && WIFSIGNALED(status)) {
@@ -193,8 +215,9 @@ static int runj (int count, char **argv)
 		if (pid[i]) {
 			kill(pid[i], SIGINT);
 			close(pipe_fd_i[1]);
+			close(pipe_fd_i[2]);
 		}
-		pipe_fd_i -= 2;
+		pipe_fd_i -= 4;
  	}
 	return r;
 }
@@ -207,9 +230,10 @@ static int runj_rx (int fd_read, FILE *fp_write)
 	ssize_t remaining;
 	assert(fp_write);
 	fprintf(stderr, "runj_rx\n");
-	if ((r = read(fd_read, buf, sizeof(buf))) <= 0)
+	if ((r = read(fd_read, buf, sizeof(buf) - 1)) <= 0)
 		return r;
-	fprintf(stderr, "runj_rx: %ld\n", r);
+	buf[r] = 0;
+	fprintf(stderr, "runj_rx: %ld: %s\n", r, buf);
 	done = 0;
 	remaining = r;
 	while (remaining > 0) {
@@ -219,7 +243,7 @@ static int runj_rx (int fd_read, FILE *fp_write)
 		remaining -= r;
 	}
 	fflush(fp_write);
-	return 0;
+	return done;
 }
 
 static int runj_tx (FILE *fp_read, int fd_write)
@@ -235,7 +259,7 @@ static int runj_tx (FILE *fp_read, int fd_write)
 		errx(1, "runj_tx: fgets");
 	}
 	if (1)
-		fprintf(stderr, "runj_tx: %s\n", buf);
+		fprintf(stderr, "runj_tx: %d: %s\n", fd_write, buf);
 	done = 0;
 	remaining = strlen(buf);
 	while (remaining > 0) {
@@ -244,7 +268,7 @@ static int runj_tx (FILE *fp_read, int fd_write)
 		done += r;
 		remaining -= r;
 	}
-	return 0;
+	return done;
 }
 
 static int usage (char *argv0)

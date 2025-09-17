@@ -14,7 +14,7 @@ CFLAGS = -W -Wall -Werror -std=c89 -pedantic -O2 -pipe
 
 CFLAGS_DEBUG = -W -Wall -Werror -std=c89 -pedantic -g -O0
 
-all: build
+all: build debug
 
 build: ${PROG}
 
