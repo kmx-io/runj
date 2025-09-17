@@ -1,0 +1,4 @@
+*.core
+*.o
+runj
+runj_debug
