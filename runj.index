@@ -1,3 +1,4 @@
+.gitignore
 Makefile
 README.md
 runj.c

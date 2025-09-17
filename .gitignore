@@ -1,5 +1,6 @@
 *.core
 *.o
+release/
 runj
 runj_debug
 runj-*
