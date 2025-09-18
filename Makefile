@@ -19,6 +19,8 @@ CFLAGS_DEBUG = -W -Wall -Werror -std=c89 -pedantic -g -O0
 
 CLEANFILES = *.o ${PROG} ${PROG_DEBUG} ${DIST}.tar.gz
 
+prefix ?= /usr/local
+
 all: build debug
 
 build: ${PROG}
@@ -48,6 +50,10 @@ ${DIST}.tar.gz:
 
 gdb: debug
 	gdb ${PROG_DEBUG}
+
+install:
+	install -d -m 0755 ${DESTDIR}${prefix}/bin
+	install -m 0755 ${PROG} ${DESTDIR}${prefix}/bin/${PROG}
 
 ${PROG}: ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} ${LDFLAGS} -o ${PROG}
