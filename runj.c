@@ -8,10 +8,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <sys/types.h>
-#include <sys/sysctl.h>
+#if (defined(__FreeBSD__) || \
+     defined(__NetBSD__) || \
+     defined(__OpenBSD__))
+# include <sys/sysctl.h>
+#else
+# include <sys/sysinfo.h>
+#endif
 #include <sys/wait.h>
 #include <unistd.h>
+
+int kill(pid_t pid, int sig);
 
 static int find_pid (pid_t key, pid_t *pids, size_t pids_size);
 int        main (int argc, char **argv);
