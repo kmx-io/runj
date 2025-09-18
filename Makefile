@@ -5,13 +5,14 @@ PROG = runj
 PROG_DEBUG = runj_debug
 
 VERSION = 0.1
-DIST = ${PROG}-${VERSION}
 
 SRCS = runj.c
 
 OBJS = runj.o
 
 OBJS_DEBUG = runj.debug.o
+
+DIST = ${PROG}-${VERSION}
 
 CFLAGS = -W -Wall -Werror -std=c89 -pedantic -O2 -pipe
 
@@ -20,6 +21,8 @@ CFLAGS_DEBUG = -W -Wall -Werror -std=c89 -pedantic -g -O0
 CLEANFILES = *.o ${PROG} ${PROG_DEBUG} ${DIST}.tar.gz
 
 prefix ?= /usr/local
+
+bindir = ${prefix}/bin
 
 all: build debug
 
@@ -52,13 +55,18 @@ gdb: debug
 	gdb ${PROG_DEBUG}
 
 install:
-	install -d -m 0755 ${DESTDIR}${prefix}/bin
-	install -m 0755 ${PROG} ${DESTDIR}${prefix}/bin/${PROG}
+	install -d -m 0755 ${DESTDIR}${bindir}
+	install -m 0755 ${PROG} ${DESTDIR}${bindir}/${PROG}
+	install -m 0755 ${PROG_DEBUG} ${DESTDIR}${bindir}/${PROG_DEBUG}
 
 ${PROG}: ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} ${LDFLAGS} -o ${PROG}
 
 ${PROG_DEBUG}: ${OBJS_DEBUG}
 	${CC} ${CFLAGS} ${OBJS_DEBUG} ${LDFLAGS} -o ${PROG_DEBUG}
+
+uninstall:
+	rm -f ${bindir}/${PROG}
+	rm -f ${bindir}/${PROG_DEBUG}
 
 .PHONY: all build clean debug dist ${DIST}.tar.gz gdb
