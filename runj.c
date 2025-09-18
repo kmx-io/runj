@@ -20,6 +20,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#define TIMEOUT_SEC 0
+#define TIMEOUT_USEC (10 * 1000)
+
 int kill(pid_t pid, int sig);
 
 static int find_pid (pid_t key, pid_t *pids, size_t pids_size);
@@ -89,7 +92,10 @@ static int runj (int count, char **argv)
 	int *pipe_fd_i;
 	int r;
 	int status;
-	struct timeval timeout = {0};
+	const struct timeval timeout_init = {
+	  TIMEOUT_SEC, TIMEOUT_USEC
+	};
+	struct timeval timeout_select = {0};
 	pid_t wpid;
 	if (count <= 0 || ! argv || ! *argv)
 		return 1;
@@ -155,8 +161,9 @@ static int runj (int count, char **argv)
 			pipe_fd_i += 4;
 			i++;
 		}
+		timeout_select = timeout_init;
 		if (select(fd_max, &fds_read, &fds_write, NULL,
-			   &timeout) > 0) {
+			   &timeout_select) > 0) {
 			if (0)
 				fprintf(stderr, "select\n");
 			pipe_fd_i = pipe_fd;
