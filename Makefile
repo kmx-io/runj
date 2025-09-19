@@ -4,7 +4,7 @@
 PROG = runj
 PROG_DEBUG = runj_debug
 
-VERSION = 0.2
+VERSION = 0.3-git
 
 SRCS = runj.c
 

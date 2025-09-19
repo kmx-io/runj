@@ -1,6 +1,8 @@
-# runj v0.2
+# runj v0.3
 
-Run a command with multiple sub-processes (jobs).
+Run a UNIX command in multiple sub-processes (jobs) with
+line-buffered standard input and output.
+
 
 ## Examples
 
@@ -39,7 +41,7 @@ runj is a UNIX command to run a command in an arbitrary number N of
 subprocesses with line-buffered input and output.
 
 It starts by forking N subprocesses and creating 2 × N pipes. The
-subprocesses are started using execvp on the remaining arguments
+subprocesses are started using execvp(3) on the remaining arguments
 and the pipes are dup2'ed to standard input and standard output.
 
 The process then enters a loop that will exit when all subprocesses have
