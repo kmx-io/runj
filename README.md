@@ -1,4 +1,4 @@
-# runj v0.3
+# runj v0.3-git
 
 Run a UNIX command in multiple sub-processes (jobs) with
 line-buffered standard input and output.
