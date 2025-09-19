@@ -1,4 +1,4 @@
-# runj v0.1
+# runj v0.2
 
 Run a command with multiple processes.
 
