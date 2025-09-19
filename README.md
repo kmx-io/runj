@@ -1,6 +1,6 @@
 # runj v0.2
 
-Run a command with multiple processes.
+Run a command with multiple sub-processes (jobs).
 
 ## Examples
 
