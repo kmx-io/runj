@@ -10,7 +10,8 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/types.h>
-#if (defined(__FreeBSD__) || \
+#if (defined(__APPLE__) ||  \
+     defined(__FreeBSD__) || \
      defined(__NetBSD__) || \
      defined(__OpenBSD__))
 # include <sys/sysctl.h>
@@ -62,7 +63,8 @@ int main (int argc, char **argv)
 
 static int ncpu (void)
 {
-#if (defined(__FreeBSD__) || \
+#if (defined(__APPLE__) ||  \
+     defined(__FreeBSD__) || \
      defined(__NetBSD__) ||  \
      defined(__OpenBSD__))
 	int mib[2];
