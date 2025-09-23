@@ -69,4 +69,4 @@ uninstall:
 	rm -f ${bindir}/${PROG}
 	rm -f ${bindir}/${PROG_DEBUG}
 
-.PHONY: all build clean debug dist ${DIST}.tar.gz gdb
+.PHONY: all build clean debug dist ${DIST}.tar.gz gdb install uninstall
