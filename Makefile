@@ -14,6 +14,8 @@ OBJS_DEBUG = runj.debug.o
 
 DIST = ${PROG}-${VERSION}
 
+CC = cc
+
 CFLAGS = -W -Wall -Werror -std=c89 -pedantic -O2 -pipe
 
 CFLAGS_DEBUG = -W -Wall -Werror -std=c89 -pedantic -g -O0

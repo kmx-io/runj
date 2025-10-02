@@ -76,6 +76,8 @@ static int ncpu (void)
 	if (sysctl(mib, 2, &hw_ncpu, &len, NULL, 0) == -1)
 		err(1, "ncpu: sysctl(hw.ncpu)");
 	return hw_ncpu;
+#elif HAVE_ANDROID
+        return sysconf(_SC_NPROCESSORS_ONLN));
 #else
 	return get_nprocs();
 #endif
