@@ -10,6 +10,10 @@ if [ "x$1" = "x--prefix" ]; then
     shift 2
 fi
 
+if [ "x$PREFIX" = "x" ]; then
+    PREFIX="/usr/local"
+fi
+
 echo "# gen by configure"  > configure.mk
 echo "prefix  = $PREFIX"  >> configure.mk
 echo "src_dir = $SRC_DIR" >> configure.mk

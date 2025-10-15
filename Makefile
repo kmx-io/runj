@@ -24,11 +24,11 @@ CLEANFILES = *.o ${PROG} ${PROG_DEBUG} ${DIST}.tar.gz
 
 prefix ?= /usr/local
 
-bindir = ${prefix}/bin
-
 all: build debug
 
 include configure.mk
+
+bindir = ${prefix}/bin
 
 build: ${PROG}
 
@@ -59,7 +59,6 @@ gdb: debug
 install:
 	install -d -m 0755 ${DESTDIR}${bindir}
 	install -m 0755 ${PROG} ${DESTDIR}${bindir}/${PROG}
-	install -m 0755 ${PROG_DEBUG} ${DESTDIR}${bindir}/${PROG_DEBUG}
 
 ${PROG}: ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} ${LDFLAGS} -o ${PROG}
