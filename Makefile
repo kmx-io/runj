@@ -28,6 +28,8 @@ bindir = ${prefix}/bin
 
 all: build debug
 
+include configure.mk
+
 build: ${PROG}
 
 clean:
@@ -70,5 +72,3 @@ uninstall:
 	rm -f ${bindir}/${PROG_DEBUG}
 
 .PHONY: all build clean debug dist ${DIST}.tar.gz gdb install uninstall
-
-include configure.mk
