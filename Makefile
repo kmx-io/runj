@@ -24,11 +24,11 @@ CLEANFILES = *.o ${PROG} ${PROG_DEBUG} ${DIST}.tar.gz
 
 prefix ?= /usr/local
 
+bindir = ${prefix}/bin
+
 all: build debug
 
 include configure.mk
-
-bindir = ${prefix}/bin
 
 build: ${PROG}
 
