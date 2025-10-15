@@ -34,13 +34,11 @@ clean:
 	rm -f ${CLEANFILES}
 	rm -rf ${DIST}
 
-.c.o:
-	${CC} ${CFLAGS} -c $< -o $@
+runj.o: ${src_dir}/runj.c
+	${CC} ${CFLAGS} -c ${src_dir}/runj.c -o runj.o
 
-.SUFFIXES: .debug.o
-
-.c.debug.o:
-	${CC} ${CFLAGS_DEBUG} -c $< -o $@
+runj.debug.o: ${src_dir}/runj.c
+	${CC} ${CFLAGS_DEBUG} -c ${src_dir}/runj.c -o runj.debug.o
 
 debug: ${PROG_DEBUG}
 

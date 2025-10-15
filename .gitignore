@@ -1,3 +1,4 @@
+configure.mk
 *.core
 *.o
 release/

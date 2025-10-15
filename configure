@@ -14,4 +14,6 @@ echo "# gen by configure"  > configure.mk
 echo "prefix  = $PREFIX"  >> configure.mk
 echo "src_dir = $SRC_DIR" >> configure.mk
 
-cp "$SRC_DIR"/Makefile ./
+if [ "x$SRC_DIR" != "x." ]; then
+    cp "$SRC_DIR"/Makefile ./
+fi
