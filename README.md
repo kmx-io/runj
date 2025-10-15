@@ -1,8 +1,10 @@
-# runj v0.3-git
+# kmx.io/runj v0.3
 
 Run a UNIX command in multiple sub-processes (jobs) with
 line-buffered standard input and output.
 
+This is a stable release, for a development branch see
+[kmx.io/runj development branch](https://git.kmx.io/kmx.io/runj)
 
 ## Examples
 
