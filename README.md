@@ -6,17 +6,19 @@ line-buffered standard input and output.
 
 ## Examples
 
-Try this to clean-up space on your hard drive (choose NVme for faster
-speed).
+Try this to clean-up space on your hard drive :
 
 ```sh
-# cd / && find -d | runj 8 xargs rm -i
+cd /tmp/dir && find | while read F; do
+  echo rm '$F'
+done | runj 8 /bin/sh
 ```
 
-This will run 8 parallel `xargs rm -i` processes.
+This will run 8 parallel `/bin/sh` processes running commands from
+stdin.
 
-Try this to speed up any shell script (warning, do not try this at home
-or on Linux) !
+Try this to speed up any shell script where every command is a
+one-liner :
 
 ```sh
 runj < MyScript.sh 32 sh -c
@@ -24,8 +26,8 @@ runj < MyScript.sh 32 sh -c
 
 This will run sh full speed on your 32 core server.
 
-More seriously, I needed to speed up my test infrastructure which is
-shell-based and want to run commands in parallel. -1 will use all the
+I needed to speed up my test infrastructure which is shell-based
+and want to run commands in parallel. -1 will use all the
 available cores.
 
 ```sh
