@@ -6,7 +6,7 @@ PROG_DEBUG = runj_debug
 
 VERSION = 0.3-git
 
-SRCS = runj.c
+SRCS = ${src_dir}/runj.c
 
 OBJS = runj.o
 
@@ -72,3 +72,5 @@ uninstall:
 	rm -f ${bindir}/${PROG_DEBUG}
 
 .PHONY: all build clean debug dist ${DIST}.tar.gz gdb install uninstall
+
+include configure.mk
