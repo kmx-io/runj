@@ -1,10 +1,21 @@
 # kmx.io/runj v0.4-git
 
-Run a UNIX command in multiple sub-processes with line-buffered
-standard input and output.
+C89, BSD-licensed. Run a UNIX command in multiple sub-processes
+with line-buffered standard input and output.
 
 This is a development branch, for a stable release see
 [kmx.io/runj v0.3](https://git.kmx.io/kmx.io/runj/_tree/v0.3)
+
+## Installation
+
+```sh
+./configure && make
+```
+
+Then as root :
+```sh
+make install
+```
 
 ## Examples
 
