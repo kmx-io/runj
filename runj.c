@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 #define TIMEOUT_SEC 0
-#define TIMEOUT_USEC (10 * 1000)
+#define TIMEOUT_USEC (100 * 1000)
 
 int kill(pid_t pid, int sig);
 
@@ -91,6 +91,7 @@ static int runj (int count, char **argv)
 	fd_set fds_write;
 	int fd_max = 0;
 	int i;
+	int input_eof = 0;
 	pid_t *pid;
 	int *pipe_fd;
 	int *pipe_fd_i;
@@ -99,7 +100,7 @@ static int runj (int count, char **argv)
 	const struct timeval timeout_init = {
 	  TIMEOUT_SEC, TIMEOUT_USEC
 	};
-	struct timeval timeout_select = {0};
+	struct timeval timeout_select = {0, 0};
 	pid_t wpid;
 	if (count <= 0 || ! argv || ! *argv)
 		return 1;
@@ -177,57 +178,53 @@ static int runj (int count, char **argv)
 				    FD_ISSET(pipe_fd_i[2], &fds_read))
 					if (runj_rx(pipe_fd_i[2],
 						    stdout) <= 0) {
-						if (0)
-							fprintf(stderr,
-								"runj: close r %d\n",
-								pipe_fd_i[2]);
 						close(pipe_fd_i[2]);
 						pipe_fd_i[2] = -1;
 						eof++;
 					}
-				if (pipe_fd_i[1] >= 0 &&
-				    FD_ISSET(pipe_fd_i[1], &fds_write))
+				if (! input_eof &&
+				    pipe_fd_i[1] >= 0 &&
+				    FD_ISSET(pipe_fd_i[1], &fds_write)) {
 					if (runj_tx(stdin,
 						    pipe_fd_i[1]) <= 0) {
-						if (0)
-							fprintf(stderr,
-								"runj: close w %d\n",
-								pipe_fd_i[1]);
-						close(pipe_fd_i[1]);
-						pipe_fd_i[1] = -1;
-						eof++;
+						int j;
+						int *pj = pipe_fd;
+						input_eof = 1;
+						j = 0;
+						while (j < count) {
+							if (pj[1] >= 0) {
+								close(pj[1]);
+								pj[1] = -1;
+								eof++;
+							}
+							pj += 4;
+							j++;
+						}
 					}
+				}
 				pipe_fd_i += 4;
 				i++;
 			}
 		}
-		if ((wpid = waitpid(-1, &status, WNOHANG)) > 0 &&
-		    WIFEXITED(status)) {
-			if ((i = find_pid(wpid, pid, sizeof(pid))) < 0) {
-				if (0)
-					warnx("runj: find_pid exit");
-				continue;
+		while ((wpid = waitpid(-1, &status, WNOHANG)) > 0) {
+			if (WIFEXITED(status)) {
+				if ((i = find_pid(wpid, pid, count * sizeof(pid_t))) < 0)
+					continue;
+				pid[i] = 0;
+				if ((r = WEXITSTATUS(status))) {
+					i = count;
+					goto stop;
+				}
+				exited++;
 			}
-			pid[i] = 0;
-			if ((r = WEXITSTATUS(status))) {
+			else if (WIFSIGNALED(status)) {
+				if ((i = find_pid(wpid, pid, count * sizeof(pid_t))) < 0)
+					errx(1, "runj: find_pid signal");
+				pid[i] = 0;
 				i = count;
+				r = 1;
 				goto stop;
 			}
-			if (0)
-				fprintf(stderr, "runj: %d: ok\n",
-					pipe_fd[i * 4 + 1]);
-			exited++;
-		}
-		else if (wpid > 0 && WIFSIGNALED(status)) {
-			if ((i = find_pid(wpid, pid, sizeof(pid))) < 0)
-				errx(1, "runj: find_pid signal");
-			if (0)
-				fprintf(stderr, "runj: %d: signal %d\n",
-					pid[i], WTERMSIG(status));
-			pid[i] = 0;
-			i = count;
-			r = 1;
-			goto stop;
 		}
 	}
 	pipe_fd_i = pipe_fd;
